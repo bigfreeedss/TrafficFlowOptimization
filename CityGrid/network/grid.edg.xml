@@ -1,0 +1,14 @@
+<edges>
+    <edge id="entry_N1" from="N1" to="c1_1" numLanes="2" speed="13.89" /> <edge id="entry_N2" from="N2" to="c1_2" numLanes="2" speed="13.89" />
+    <edge id="entry_S1" from="S1" to="c2_1" numLanes="2" speed="13.89" /> <edge id="entry_S2" from="S2" to="c2_2" numLanes="2" speed="13.89" />
+    <edge id="entry_W1" from="W1" to="c1_1" numLanes="2" speed="13.89" /> <edge id="entry_W2" from="W2" to="c2_1" numLanes="2" speed="13.89" />
+    <edge id="entry_E1" from="E1" to="c1_2" numLanes="2" speed="13.89" /> <edge id="entry_E2" from="E2" to="c2_2" numLanes="2" speed="13.89" />
+    <edge id="c1_1_to_c1_2" from="c1_1" to="c1_2" numLanes="2" speed="13.89" /> <edge id="c1_2_to_c1_1" from="c1_2" to="c1_1" numLanes="2" speed="13.89" />
+    <edge id="c2_1_to_c2_2" from="c2_1" to="c2_2" numLanes="2" speed="13.89" /> <edge id="c2_2_to_c2_1" from="c2_2" to="c2_1" numLanes="2" speed="13.89" />
+    <edge id="c1_1_to_c2_1" from="c1_1" to="c2_1" numLanes="2" speed="13.89" /> <edge id="c2_1_to_c1_1" from="c2_1" to="c1_1" numLanes="2" speed="13.89" />
+    <edge id="c1_2_to_c2_2" from="c1_2" to="c2_2" numLanes="2" speed="13.89" /> <edge id="c2_2_to_c1_2" from="c2_2" to="c1_2" numLanes="2" speed="13.89" />
+    <edge id="exit_N1" from="c1_1" to="N1" numLanes="2" speed="13.89" /> <edge id="exit_N2" from="c1_2" to="N2" numLanes="2" speed="13.89" />
+    <edge id="exit_S1" from="c2_1" to="S1" numLanes="2" speed="13.89" /> <edge id="exit_S2" from="c2_2" to="S2" numLanes="2" speed="13.89" />
+    <edge id="exit_W1" from="c1_1" to="W1" numLanes="2" speed="13.89" /> <edge id="exit_W2" from="c2_1" to="W2" numLanes="2" speed="13.89" />
+    <edge id="exit_E1" from="c1_2" to="E1" numLanes="2" speed="13.89" /> <edge id="exit_E2" from="c2_2" to="E2" numLanes="2" speed="13.89" />
+</edges>
