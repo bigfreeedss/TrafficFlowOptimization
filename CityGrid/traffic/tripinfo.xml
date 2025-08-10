@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2025-07-30 17:31:27 by Eclipse SUMO GUI Version 1.20.0
-<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
+<!-- generated on 2025-07-31 14:38:42 by Eclipse SUMO GUI Version 1.24.0
+<sumoConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
 
     <input>
-        <net-file value="C:\Users\Josh\Documents\Team9-CityGrid-Final\traffic\../network/grid.net.xml"/>
-        <route-files value="C:\Users\Josh\Documents\Team9-CityGrid-Final\traffic\grid.rou.xml"/>
+        <net-file value="C:\Users\maame\TrafficFlowOptimization\CityGrid\traffic\../network/grid.net.xml"/>
+        <route-files value="C:\Users\maame\TrafficFlowOptimization\CityGrid\traffic\grid.rou.xml"/>
     </input>
 
     <output>
-        <tripinfo-output value="C:\Users\Josh\Documents\Team9-CityGrid-Final\traffic\tripinfo.xml"/>
+        <tripinfo-output value="C:\Users\maame\TrafficFlowOptimization\CityGrid\traffic\tripinfo.xml"/>
     </output>
 
     <time>
@@ -23,10 +23,10 @@
     </report>
 
     <gui_only>
-        <gui-settings-file value="C:\Users\Josh\Documents\Team9-CityGrid-Final\traffic\gui_settings.xml"/>
+        <gui-settings-file value="C:\Users\maame\TrafficFlowOptimization\CityGrid\traffic\gui_settings.xml"/>
     </gui_only>
 
-</configuration>
+</sumoConfiguration>
 -->
 
 <tripinfos xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/tripinfo_file.xsd">
