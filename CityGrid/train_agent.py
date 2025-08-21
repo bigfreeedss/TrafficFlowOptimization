@@ -1,69 +1,67 @@
 import os
-import traci
 from stable_baselines3 import PPO
-from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.vec_env import DummyVecEnv
+from stable_baselines3.common.callbacks import CheckpointCallback
 from sumo_env import SumoTrafficEnv
-import numpy as np
 
+# -------------------
+# SETTINGS
+# -------------------
+TOTAL_TIMESTEPS = 500_000        # train steps (adjust if too long)
+CHECKPOINT_DIR = "checkpoints"
+MODEL_PATH = "ppo_traffic_final.zip"
+USE_GUI = False                  # turn ON for debugging, OFF for faster training
 
-# -------------------------
-# Custom Logging Callback
-# -------------------------
-class TrafficLoggingCallback(BaseCallback):
-    def __init__(self, check_freq=5000, save_path="checkpoints", verbose=1):
-        super(TrafficLoggingCallback, self).__init__(verbose)
-        self.check_freq = check_freq
-        self.save_path = save_path
-        os.makedirs(save_path, exist_ok=True)
+# -------------------
+# CREATE ENV
+# -------------------
+def make_env():
+    return SumoTrafficEnv(gui=USE_GUI, min_phase_time=10)
 
-    def _on_step(self) -> bool:
-        # Every check_freq steps, log and save model
-        if self.n_calls % self.check_freq == 0:
-            avg_wait = 0
-            avg_queue = 0
-            if traci.isLoaded():
-                edges = self.training_env.envs[0].edges
-                avg_wait = np.mean([traci.edge.getWaitingTime(e) for e in edges])
-                avg_queue = np.mean([traci.edge.getLastStepHaltingNumber(e) for e in edges])
+env = DummyVecEnv([make_env])
 
-            if self.verbose > 0:
-                print(f"📊 Step {self.n_calls} | Avg Wait: {avg_wait:.2f} | Avg Queue: {avg_queue:.2f}")
+# -------------------
+# CALLBACKS
+# -------------------
+checkpoint_callback = CheckpointCallback(
+    save_freq=50_000,   # save every 50k steps
+    save_path=CHECKPOINT_DIR,
+    name_prefix="ppo_traffic"
+)
 
-            model_path = os.path.join(self.save_path, f"ppo_traffic_{self.n_calls}_steps.zip")
-            self.model.save(model_path)
-            print(f"💾 Saved model at {model_path}")
+# -------------------
+# TRAINING
+# -------------------
+print("🚦 Starting PPO Training...")
+model = PPO(
+    "MlpPolicy",
+    env,
+    verbose=1,
+    learning_rate=0.0003,
+    n_steps=1024,
+    batch_size=64,
+    ent_coef=0.01,   # encourages exploration
+    gamma=0.99
+)
 
-        return True
+model.learn(total_timesteps=TOTAL_TIMESTEPS, callback=checkpoint_callback)
+model.save(MODEL_PATH)
+print(f"✅ Training complete. Model saved at {MODEL_PATH}")
 
+# -------------------
+# QUICK TEST (OPTIONAL)
+# -------------------
+print("▶ Running quick evaluation after training...")
+test_env = SumoTrafficEnv(gui=True, min_phase_time=10)  # open SUMO GUI
+obs, _ = test_env.reset()
+total_reward = 0
 
-# -------------------------
-# Training Script
-# -------------------------
-if __name__ == "__main__":
-    # Create env
-    env = DummyVecEnv([lambda: SumoTrafficEnv(gui=False)])
+for step in range(1000):  # run 1000 steps to see behavior
+    action, _ = model.predict(obs, deterministic=True)
+    obs, reward, terminated, truncated, _ = test_env.step(action)
+    total_reward += reward
+    if terminated or truncated:
+        break
 
-    # Define PPO model
-    model = PPO(
-        "MlpPolicy",
-        env,
-        verbose=1,
-        learning_rate=0.0003,
-        n_steps=2048,
-        batch_size=64,
-        ent_coef=0.01,
-        gamma=0.99,
-    )
-
-    # Callback for logging & saving
-    callback = TrafficLoggingCallback(check_freq=10000, save_path="checkpoints")
-
-    print("🚦 Starting training...")
-    model.learn(total_timesteps=500_000, callback=callback)
-
-    # Save final model
-    model.save("ppo_traffic_final")
-    print("✅ Training complete. Model saved as ppo_traffic_final.zip")
-
-    env.close()
+test_env.close()
+print(f"🎯 Quick Test Finished | Total Reward: {total_reward:.2f}")
