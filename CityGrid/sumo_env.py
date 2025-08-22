@@ -5,86 +5,70 @@ import os
 from gymnasium import spaces
 import sumolib
 
-
 class SumoTrafficEnv(gym.Env):
-    def __init__(self, gui=False, min_phase_time=10):
+    def __init__(self, gui=False, min_green=10):
         super(SumoTrafficEnv, self).__init__()
         self.gui = gui
-        self.min_phase_time = min_phase_time
-        self.step_count = 0
-        self.current_phase_time = 0
-        self.last_action = 0
-
-        # Action space: 0 = keep current, 1 = NS green, 2 = EW green
-        self.action_space = spaces.Discrete(3)
-
-        # Observations: vehicle counts on 8 entry edges
-        self.observation_space = spaces.Box(low=0, high=200, shape=(8,), dtype=np.float32)
+        self.min_green = min_green  # minimum time before switching lights
+        self.action_space = spaces.MultiDiscrete([2] * len(self._get_tls_ids()))
+        self.observation_space = spaces.Box(low=0, high=100, shape=(len(self._get_edge_ids()),), dtype=np.float32)
 
         self.sumocfg = os.path.abspath(os.path.join("traffic", "grid.sumocfg"))
+        self.edges = self._get_edge_ids()
+        self.tls_ids = self._get_tls_ids()
+        self.tls_last_switch = {tls: 0 for tls in self.tls_ids}
 
-        # Load network once to get traffic lights & edges
-        net = sumolib.net.readNet(os.path.abspath(os.path.join("network", "grid.net.xml")))
-        self.tls_ids = [tl.getID() for tl in net.getTrafficLights()]
-        print("🔗 Controlling traffic lights:", self.tls_ids)
+    def _get_edge_ids(self):
+        net_path = os.path.abspath(os.path.join("network", "grid.net.xml"))
+        net = sumolib.net.readNet(net_path)
+        return [e.getID() for e in net.getEdges() if e.getID() != ":"]
 
-        self.edges = [e.getID() for e in net.getEdges() if e.getID().startswith("entry")]
+    def _get_tls_ids(self):
+        net_path = os.path.abspath(os.path.join("network", "grid.net.xml"))
+        net = sumolib.net.readNet(net_path)
+        return [tls.getID() for tls in net.getTrafficLights()]
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
-        self.step_count = 0
-        self.current_phase_time = 0
-        self.last_action = 0
-
         if traci.isLoaded():
             traci.close()
 
-        if self.gui:
-            sumoBinary = os.path.join(os.environ["SUMO_HOME"], "bin", "sumo-gui")
-        else:
-            sumoBinary = os.path.join(os.environ["SUMO_HOME"], "bin", "sumo")
+        sumo_binary = os.path.join(os.environ["SUMO_HOME"], "bin", "sumo-gui" if self.gui else "sumo")
+        traci.start([sumo_binary, "-c", self.sumocfg])
 
-        traci.start([sumoBinary, "-c", self.sumocfg])
+        self.tls_last_switch = {tls: 0 for tls in self.tls_ids}
+        self.current_step = 0
         return self._get_state(), {}
 
     def step(self, action):
-        self.step_count += 1
-        self.current_phase_time += 1
+        self.current_step += 1
 
-        # Only change if min green/red time passed
-        if action != self.last_action and self.current_phase_time >= self.min_phase_time:
-            self._apply_action(action)
-            self.last_action = action
-            self.current_phase_time = 0
+        for i, tls_id in enumerate(self.tls_ids):
+            if self.current_step - self.tls_last_switch[tls_id] >= self.min_green:
+                traci.trafficlight.setPhase(tls_id, int(action[i]) * 2)
+                self.tls_last_switch[tls_id] = self.current_step
 
         traci.simulationStep()
+
         state = self._get_state()
         reward = self._calculate_reward()
         terminated = traci.simulation.getMinExpectedNumber() <= 0
         truncated = False
-
         return state, reward, terminated, truncated, {}
 
     def _get_state(self):
-        return np.array([traci.edge.getLastStepVehicleNumber(e) for e in self.edges], dtype=np.float32)
+        return np.array(
+            [traci.edge.getLastStepVehicleNumber(edge) for edge in self.edges],
+            dtype=np.float32
+        )
 
     def _calculate_reward(self):
-        wait_time = sum(traci.edge.getWaitingTime(e) for e in self.edges)
+        total_wait = sum(traci.edge.getWaitingTime(edge) for edge in self.edges)
+        queue_length = sum(traci.edge.getLastStepHaltingNumber(edge) for edge in self.edges)
         throughput = traci.simulation.getArrivedNumber()
-        queue_length = sum(traci.edge.getLastStepHaltingNumber(e) for e in self.edges)
+        switch_penalty = sum([1 for tls in self.tls_ids if self.current_step - self.tls_last_switch[tls] < self.min_green])
 
-        # Encourage throughput, discourage waiting & long queues
-        return (0.5 * throughput) - (0.3 * wait_time) - (0.2 * queue_length)
-
-    def _apply_action(self, action):
-        for tls_id in self.tls_ids:
-            if action == 1:  # NS green
-                traci.trafficlight.setPhase(tls_id, 0)
-            elif action == 2:  # EW green
-                traci.trafficlight.setPhase(tls_id, 2)
-            else:  # Keep current
-                pass
+        return - (0.5 * total_wait + 0.3 * queue_length + 0.2 * switch_penalty) + (0.6 * throughput)
 
     def close(self):
-        if traci.isLoaded():
-            traci.close()
+        traci.close()
