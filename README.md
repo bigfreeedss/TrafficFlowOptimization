@@ -119,8 +119,5 @@ python avg_wait_time_script.py
 * SUMO Documentation – [https://sumo.dlr.de/docs/](https://sumo.dlr.de/docs/)
 * Gymnasium Documentation – [https://gymnasium.farama.org/](https://gymnasium.farama.org/)
 
----
 
-✅ This README explains the **project motivation, methodology, reward design, results, repo structure, setup instructions, and ethical considerations** — so anyone who visits your GitHub can fully understand and replicate the work.
 
-Do you want me to also add a **diagram/graph** (e.g., showing baseline vs PPO average wait time) inside the README for visualization?
